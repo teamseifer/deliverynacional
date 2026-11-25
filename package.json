@@ -1,0 +1,12 @@
+{
+  "name": "deliverynacional",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Funil Point do Açaí — Cloudflare Pages",
+  "scripts": {
+    "deploy": "wrangler pages deploy . --project-name deliverynacional --commit-dirty=true"
+  },
+  "devDependencies": {
+    "wrangler": "^4.156.0"
+  }
+}
