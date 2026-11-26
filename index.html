@@ -6621,6 +6621,14 @@
 			document.querySelectorAll("#localEstado").forEach(el => el.textContent = estado);
 		}
 
+		function localizacaoImprecisa(loc) {
+			const c = (loc.city || "").toLowerCase().trim();
+			const r = (loc.region || "").trim().toUpperCase();
+			if (!c || c === "sua cidade") return true;
+			if (!r || r === "UF" || r === "SEU ESTADO") return true;
+			return false;
+		}
+
 		async function confirmarLojaProxima(cidade) {
 			await Swal.fire({
 				title: "Procurando a loja mais próxima...",
@@ -6642,6 +6650,56 @@
 			});
 		}
 
+		async function escolherLocalizacaoManual(cidadeSugerida) {
+			let ufPadrao = "";
+			if (cidadeSugerida && !localizacaoImprecisa({ city: cidadeSugerida, region: "SP" })) {
+				/* nada */
+			}
+
+			let { value: estadoEscolhido } = await Swal.fire({
+				title: "Informe sua localização",
+				text: "Escolha seu estado:",
+				input: "select",
+				inputOptions: estados_input,
+				inputPlaceholder: "Escolha seu estado",
+				inputValue: ufPadrao,
+				confirmButtonText: "Próximo",
+				confirmButtonColor: "green",
+				allowOutsideClick: false,
+				allowEscapeKey: false,
+				inputValidator: (value) => (value ? undefined : "Por favor, escolha seu estado."),
+			});
+			if (!estadoEscolhido) return;
+
+			var quais_opt_de_cidade = [];
+			cidades_por_estados.forEach((item) => {
+				if (item[0] == estadoEscolhido) quais_opt_de_cidade.push(item[1]);
+			});
+
+			let preIdx = cidadeSugerida ? quais_opt_de_cidade.indexOf(cidadeSugerida) : -1;
+			if (preIdx < 0) preIdx = undefined;
+
+			let { value: cidadeEscolhida } = await Swal.fire({
+				title: "Estamos quase lá...",
+				text: "Agora, selecione sua cidade:",
+				input: "select",
+				inputOptions: quais_opt_de_cidade,
+				inputValue: preIdx,
+				confirmButtonText: "Confirmar localização",
+				confirmButtonColor: "green",
+				allowOutsideClick: false,
+				allowEscapeKey: false,
+				inputValidator: (value) => (value !== undefined && value !== "" ? undefined : "Por favor, escolha sua cidade."),
+			});
+			if (cidadeEscolhida === undefined || cidadeEscolhida === null) return;
+
+			const cidade = quais_opt_de_cidade[cidadeEscolhida];
+			setCookie("localEstado", estadoEscolhido, 365);
+			setCookie("localCidade", cidade, 365);
+			await atualizarLocalizacao();
+			await confirmarLojaProxima(cidade);
+		}
+
 		async function escolherLocalizacao() {
 			await atualizarLocalizacao();
 
@@ -6658,9 +6716,23 @@
 			});
 
 			const loc = await fetchLocation();
+			Swal.close();
+
+			if (localizacaoImprecisa(loc)) {
+				await Swal.fire({
+					icon: "info",
+					title: "Não conseguimos localizar você",
+					text: "Selecione seu estado e cidade manualmente para continuar.",
+					confirmButtonText: "Continuar",
+					confirmButtonColor: "green",
+					allowOutsideClick: false,
+				});
+				return escolherLocalizacaoManual();
+			}
+
 			const estadoNome = estados_input[loc.region] || loc.region;
 
-			const { isConfirmed } = await Swal.fire({
+			const result = await Swal.fire({
 				title: "Confirme sua localização",
 				html: `
 					<p style="margin:0 0 12px;">Sua localização detectada:</p>
@@ -6669,14 +6741,19 @@
 				`,
 				icon: "question",
 				showCancelButton: true,
+				showDenyButton: true,
 				confirmButtonText: "Sim, confirmar",
+				denyButtonText: "Informar manualmente",
 				cancelButtonText: "Tentar novamente",
 				confirmButtonColor: "green",
 				allowOutsideClick: false,
 				allowEscapeKey: false,
 			});
 
-			if (!isConfirmed) {
+			if (result.isDenied) {
+				return escolherLocalizacaoManual(loc.city);
+			}
+			if (!result.isConfirmed) {
 				return escolherLocalizacao();
 			}
 

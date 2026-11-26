@@ -1,0 +1,31 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Poppins',sans-serif;background:#f4f0f5;color:#222;min-height:100vh}
+.top{background:#5b0e5c;color:#fff;padding:16px 20px 24px;text-align:center;position:relative}
+.top .voltar{position:absolute;left:16px;top:18px;color:#fff;text-decoration:none;font-size:14px;font-weight:500}
+.top .logo{height:56px;width:auto;display:block;margin:0 auto 8px}
+.top h1{font-size:1.1rem;font-weight:600}
+.wrap{max-width:520px;margin:-12px auto 32px;padding:0 14px 40px}
+.card{background:#fff;border-radius:14px;padding:18px 16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(91,14,92,.08)}
+.card h2{font-size:1rem;color:#5b0e5c;margin-bottom:12px;font-weight:600}
+.resumo .produto{font-weight:600;margin-bottom:4px}
+.resumo .sub{font-size:13px;color:#666;margin-bottom:12px}
+.linha{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid #f0e8f0}
+.linha.total{border:none;font-size:17px;font-weight:700;color:#5b0e5c;margin-top:8px;padding-top:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .full{grid-column:1/-1}
+label{font-size:12px;font-weight:500;color:#444;display:flex;flex-direction:column;gap:4px}
+input{border:1px solid #ddd;border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;width:100%}
+input:focus{outline:none;border-color:#5b0e5c;box-shadow:0 0 0 2px rgba(91,14,92,.15)}
+.opcao-entrega{display:flex;align-items:center;gap:12px;padding:12px;border:2px solid #ece6ed;border-radius:12px;margin-bottom:8px;cursor:pointer}
+.opcao-entrega:has(input:checked){border-color:#5b0e5c;background:#faf5fb}
+.opcao-entrega input{accent-color:#5b0e5c;width:18px;height:18px}
+.opcao-entrega span{flex:1;display:flex;flex-direction:column;gap:2px}
+.opcao-entrega small{font-size:12px;color:#666;font-weight:400}
+.opcao-entrega strong{color:#077c22;font-size:14px}
+.pix-info{font-size:14px;color:#555;margin-bottom:14px;line-height:1.5}
+.btn-pagar{width:100%;background:#5b0e5c;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-pagar:disabled{opacity:.6;cursor:not-allowed}
+.erro{color:#c62828;font-size:13px;margin-top:10px;display:none}
+.erro.show{display:block}
+.cep-msg{font-size:12px;color:#077c22;margin-top:8px;min-height:18px}
+footer{text-align:center;font-size:12px;color:#888;padding:20px}

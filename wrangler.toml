@@ -1,4 +1,9 @@
 # Cloudflare Pages — Point do Açaí (deliverynacional)
+# Secrets: wrangler pages secret put MANGOFY_API_KEY --project-name deliverynacional
+#          wrangler pages secret put MANGOFY_STORE_CODE --project-name deliverynacional
 name = "deliverynacional"
 compatibility_date = "2026-11-24"
 pages_build_output_dir = "."
+
+[vars]
+MANGOFY_BASE_URL = "https://checkout.mangofy.com.br"

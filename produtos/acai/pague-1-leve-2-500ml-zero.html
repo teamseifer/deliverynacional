@@ -956,7 +956,6 @@
 					<div id="precoProduto">R$ 0,00</div>
 					<span class="precoProduto" style="display:none">14.00</span>
 					<button class="btn adicionarProduto" onclick="finalizar()">FINALIZAR PEDIDO</button>
-					<a href="https://checkout.acaipagamento.shop/VCCL1O8SD18K" id="finalizarPedido" style="display: none;"></a>
 				</div>
 			</div>
 		</div>
@@ -969,37 +968,7 @@
 
 	<script src="js/sweetalert.min.js" referrerpolicy="no-referrer"></script>
 
-	<script>
-		function finalizar() {
-			Swal.fire({
-				title: "Deseja que entregamos agora?",
-				showDenyButton: true,
-				showCancelButton: false,
-				allowOutsideClick: false,
-				icon: 'question',
-				confirmButtonText: "Sim, por favor!",
-				confirmButtonColor: "green",
-				denyButtonText: `Não, quero agendar a entrega!`,
-				focusConfirm: true,
-			}).then((result) => {
-				if (result.isConfirmed) {
-					location.href = $('a#finalizarPedido').attr('href');
-				} else if (result.isDenied) {
-					Swal.fire({
-						title: "Selecione o dia e a hora, por gentileza!",
-						text: 'Deixe seu pedido agendado e receba na hora combinada.',
-						confirmButtonText: "Agendar pedido!",
-						confirmButtonColor: "green",
-						showCancelButton: false,
-						allowOutsideClick: false,
-						input: "datetime-local",
-					}).then((result) => {
-						location.href = $('a#finalizarPedido').attr('href');
-					});
-				}
-			});
-		}
-	</script>
+	<script src="../../js/finalizar-pedido.js"></script>
 
 
 

@@ -1,0 +1,19 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Poppins',sans-serif;background:#f4f0f5;color:#222;min-height:100vh}
+.top{background:#5b0e5c;color:#fff;padding:20px;text-align:center}
+.top .logo{height:48px;margin-bottom:8px}
+.top h1{font-size:1.05rem;font-weight:600}
+.wrap{max-width:440px;margin:20px auto;padding:0 14px 40px}
+.card{background:#fff;border-radius:16px;padding:22px 18px;text-align:center;box-shadow:0 2px 14px rgba(91,14,92,.1)}
+.valor{font-size:2rem;font-weight:700;color:#5b0e5c}
+.sub{font-size:14px;color:#666;margin:8px 0 16px}
+.qr{display:inline-block;padding:12px;border:2px solid #5b0e5c;border-radius:12px;margin-bottom:16px;background:#fff}
+.code-box{text-align:left;margin-bottom:12px}
+.code-box label{font-size:12px;font-weight:600;color:#5b0e5c}
+.code{font-family:monospace;font-size:10px;word-break:break-all;color:#333;margin:8px 0 12px;max-height:72px;overflow:auto}
+.btn{width:100%;background:#5b0e5c;color:#fff;border:none;border-radius:12px;padding:14px;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit}
+.btn-outline{width:100%;margin-top:10px;background:#fff;border:2px solid #5b0e5c;color:#5b0e5c;border-radius:12px;padding:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.ok{display:none;background:#e8f5e9;border-radius:12px;padding:14px;margin-top:14px;color:#2e7d32;font-weight:600}
+.ok.show{display:block}
+.err{color:#c62828;font-size:13px;margin-top:10px}
+.wait{font-size:13px;color:#666;margin-top:14px}

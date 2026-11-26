@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Pagar com PIX — Point do Açaí</title>
+	<link rel="shortcut icon" type="image/jpg" href="../images/Point.png">
+	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+	<link rel="stylesheet" href="pix.css">
+</head>
+<body>
+	<header class="top">
+		<img src="../images/Point.png" alt="" class="logo">
+		<h1>Pague com PIX</h1>
+	</header>
+	<main class="wrap">
+		<div class="card">
+			<p class="valor" id="pix-valor">...</p>
+			<p class="sub">Escaneie o QR ou copie o código abaixo</p>
+			<div class="qr" id="qr"></div>
+			<div class="code-box">
+				<label>PIX copia e cola</label>
+				<p class="code" id="pix-code"></p>
+				<button type="button" class="btn" id="btn-copy">Copiar código PIX</button>
+			</div>
+			<button type="button" class="btn-outline" id="btn-check">Já paguei — verificar</button>
+			<p class="ok" id="paid-ok">✅ Pagamento confirmado! Seu pedido foi recebido.</p>
+			<p class="err" id="pix-err"></p>
+			<p class="wait">Aguardando pagamento… Verificação automática a cada 8s.</p>
+		</div>
+	</main>
+	<script src="pix.js"></script>
+</body>
+</html>
