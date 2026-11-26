@@ -1,9 +1,10 @@
 import type { Env } from '../lib/env';
-import { mangofyReady } from '../lib/env';
+import { mangofyReady, utmifyPlatform } from '../lib/env';
 import {
   buildMangofyBody,
   isDuplicateExternal,
   mangofyError,
+  mangofyExternal,
   mangofyPaidAt,
   mangofyPaymentCode,
   mangofyPixCode,
@@ -13,7 +14,48 @@ import {
   MANGOFY_PAYMENT_GET_PATH,
   MANGOFY_PIX_CREATE_PATH,
 } from '../lib/mangofy';
-import { asRecord, isPaidStatus, json, preflight, readJson, str } from '../lib/http';
+import { asRecord, clientIp, isPaidStatus, json, preflight, readJson, str } from '../lib/http';
+import { buildUtmifyOrder, sendUtmifyPending, syncUtmifyStatus } from '../lib/utmify';
+
+const TRACK_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'sck', 'fbp', 'fbc', 'utm_id'];
+
+function putTrack(out: Record<string, string>, key: string, val: unknown) {
+  const clean = typeof val === 'string' ? val.trim() : val === undefined || val === null ? '' : String(val).trim();
+  if (clean === '' || clean === 'null' || clean === 'undefined') return;
+  out[key] = clean.slice(0, 300);
+}
+
+function collectTrack(request: Request, raw: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const src of [raw.tracking, raw.trackProps, raw.trackingParameters]) {
+    const rec = asRecord(src);
+    if (!rec) continue;
+    for (const key of TRACK_KEYS) putTrack(out, key, rec[key]);
+  }
+  const cookie = request.headers.get('cookie') || '';
+  const fbp = cookie.match(/(?:^|;\s*)_fbp=([^;]+)/);
+  const fbc = cookie.match(/(?:^|;\s*)_fbc=([^;]+)/);
+  if (fbp) putTrack(out, 'fbp', decodeURIComponent(fbp[1]));
+  if (fbc) putTrack(out, 'fbc', decodeURIComponent(fbc[1]));
+  try {
+    const ref = new URL(request.headers.get('referer') || 'http://local/');
+    for (const key of TRACK_KEYS) putTrack(out, key, ref.searchParams.get(key) || '');
+  } catch {
+    /* ok */
+  }
+  return out;
+}
+
+function customerEmail(name: string, document: string): string {
+  const slug = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '')
+    .slice(0, 18);
+  const tail = document.replace(/\D/g, '').slice(-4) || '00';
+  return `${slug || 'cliente'}${tail}@gmail.com`;
+}
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const pf = preflight(ctx.request);
@@ -59,30 +101,15 @@ async function createPix(ctx: EventContext<Env, string, unknown>): Promise<Respo
     return json({ ok: false, error: 'Nome, telefone e CPF sao obrigatorios.' }, 400);
   }
 
-  let result = await mangofyRequest(
-    ctx.env,
-    'POST',
-    MANGOFY_PIX_CREATE_PATH,
-    buildMangofyBody(ctx.request, ctx.env, raw)
-  );
+  let result = await mangofyRequest(ctx.env, 'POST', MANGOFY_PIX_CREATE_PATH, buildMangofyBody(ctx.request, ctx.env, raw));
   if (result.transportError || result.httpStatus >= 500) {
     await new Promise((r) => setTimeout(r, 1500));
-    const retry = await mangofyRequest(
-      ctx.env,
-      'POST',
-      MANGOFY_PIX_CREATE_PATH,
-      buildMangofyBody(ctx.request, ctx.env, raw)
-    );
+    const retry = await mangofyRequest(ctx.env, 'POST', MANGOFY_PIX_CREATE_PATH, buildMangofyBody(ctx.request, ctx.env, raw));
     if (!retry.transportError && retry.httpStatus < 500) result = retry;
   }
   if (isDuplicateExternal(result)) {
     raw.identifier = `${str(raw.identifier).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 60)}_${Date.now()}`;
-    result = await mangofyRequest(
-      ctx.env,
-      'POST',
-      MANGOFY_PIX_CREATE_PATH,
-      buildMangofyBody(ctx.request, ctx.env, raw)
-    );
+    result = await mangofyRequest(ctx.env, 'POST', MANGOFY_PIX_CREATE_PATH, buildMangofyBody(ctx.request, ctx.env, raw));
   }
   if (result.transportError) return json({ ok: false, error: 'Falha de conexao com gateway', gateway: 'mangofy' }, 502);
   if (result.httpStatus >= 400) {
@@ -127,6 +154,26 @@ async function createPix(ctx: EventContext<Env, string, unknown>): Promise<Respo
     else pix.base64 = qr;
   }
 
+  const orderId = txId || str(raw.identifier);
+  const name = str(client.name).trim();
+  const document = str(client.document).replace(/\D/g, '');
+  const track = collectTrack(ctx.request, raw);
+  const order = buildUtmifyOrder({
+    orderId,
+    amount: Math.round(Number(raw.amount) * 100) / 100,
+    productType: str(raw.productType) || 'acai-carrinho',
+    productName: str(raw.productName),
+    name: name || 'Cliente',
+    email: str(client.email).trim() || customerEmail(name, document),
+    phone: str(client.phone).replace(/\D/g, '') || '11999999999',
+    document,
+    ip: clientIp(ctx.request),
+    track,
+    platform: utmifyPlatform(ctx.env),
+  });
+  const aliases = [orderId, txId, str(raw.identifier), mangofyExternal(result.data)].filter(Boolean);
+  await sendUtmifyPending(ctx.env, order, aliases);
+
   return json({
     ok: true,
     transactionId: txId,
@@ -146,11 +193,7 @@ async function checkStatus(ctx: EventContext<Env, string, unknown>): Promise<Res
     return json({ ok: true, id: transactionId, status: 'PENDING', payedAt: null });
   }
 
-  const result = await mangofyRequest(
-    ctx.env,
-    'GET',
-    `${MANGOFY_PAYMENT_GET_PATH}${encodeURIComponent(transactionId)}`
-  );
+  const result = await mangofyRequest(ctx.env, 'GET', `${MANGOFY_PAYMENT_GET_PATH}${encodeURIComponent(transactionId)}`);
   if (result.transportError || result.httpStatus >= 400 || !result.data) {
     return json({ ok: true, id: transactionId, status: 'PENDING', payedAt: null });
   }
@@ -159,6 +202,8 @@ async function checkStatus(ctx: EventContext<Env, string, unknown>): Promise<Res
   const respId = mangofyPaymentCode(result.data) || transactionId;
   if (isPaidStatus(status) || payedAt) {
     const paidTs = payedAt || new Date().toISOString();
+    const ext = mangofyExternal(result.data);
+    await syncUtmifyStatus(ctx.env, [respId, transactionId, ext], 'PAID', paidTs);
     return json({ ok: true, id: respId, status: 'PAID', payedAt: paidTs });
   }
   return json({ ok: true, id: respId, status, payedAt: null });

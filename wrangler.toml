@@ -7,3 +7,9 @@ pages_build_output_dir = "."
 
 [vars]
 MANGOFY_BASE_URL = "https://checkout.mangofy.com.br"
+UTMIFY_API_URL = "https://api.utmify.com.br/api-credentials/orders"
+UTMIFY_PLATFORM = "Mangofy"
+
+[[kv_namespaces]]
+binding = "ACAI_TX"
+id = "ac565e7fdef74178a680f79660174e87"

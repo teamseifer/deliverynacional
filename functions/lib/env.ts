@@ -3,6 +3,15 @@ export interface Env {
   MANGOFY_STORE_CODE?: string;
   MANGOFY_BASE_URL?: string;
   WEBHOOK_SECRET?: string;
+  UTMIFY_API_TOKEN?: string;
+  UTMIFY_API_URL?: string;
+  UTMIFY_PLATFORM?: string;
+  ACAI_TX: KVNamespace;
+}
+
+export function utmifyPlatform(env: Env): string {
+  const p = (env.UTMIFY_PLATFORM || 'Mangofy').trim();
+  return p || 'Mangofy';
 }
 
 export const MANGOFY_BASE_DEFAULT = 'https://checkout.mangofy.com.br';

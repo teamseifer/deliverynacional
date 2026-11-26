@@ -7,8 +7,12 @@ body{font-family:'Poppins',sans-serif;background:#f4f0f5;color:#222;min-height:1
 .wrap{max-width:520px;margin:-12px auto 32px;padding:0 14px 40px}
 .card{background:#fff;border-radius:14px;padding:18px 16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(91,14,92,.08)}
 .card h2{font-size:1rem;color:#5b0e5c;margin-bottom:12px;font-weight:600}
-.resumo .produto{font-weight:600;margin-bottom:4px}
-.resumo .sub{font-size:13px;color:#666;margin-bottom:12px}
+.resumo-itens{list-style:none;margin:0 0 12px;padding:0}
+.resumo-itens li{padding:10px 0;border-bottom:1px solid #f0e8f0;font-size:14px}
+.resumo-itens li:last-child{border-bottom:none}
+.resumo-itens .item-nome{font-weight:600;color:#333}
+.resumo-itens .item-preco{float:right;color:#5b0e5c;font-weight:600}
+.resumo-itens .item-obs{font-size:12px;color:#888;margin-top:4px;clear:both}
 .linha{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid #f0e8f0}
 .linha.total{border:none;font-size:17px;font-weight:700;color:#5b0e5c;margin-top:8px;padding-top:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}

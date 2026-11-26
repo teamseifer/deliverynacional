@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "description": "Funil Point do Açaí — Cloudflare Pages",
   "scripts": {
-    "dev": "wrangler pages dev .",
+    "dev": "wrangler pages dev . --port 8788",
+    "start": "wrangler pages dev . --port 8788",
     "deploy": "wrangler pages deploy . --project-name deliverynacional --commit-dirty=true"
   },
   "devDependencies": {

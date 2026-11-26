@@ -15,65 +15,51 @@
 		return el ? String(el.value || '').trim().slice(0, 140) : '';
 	}
 
-	function salvarPedido(extra) {
+	function montarItem() {
 		const titulo = document.querySelector('#detalhesProduto .info1 h3, #detalhesProduto h3');
 		const nome = titulo ? titulo.textContent.trim() : slugFromPath();
 		const precoEl = document.querySelector('#precoProduto');
 		const preco = parsePreco(precoEl ? precoEl.textContent : '');
-		const pedido = {
+		if (!preco) return null;
+		return {
 			slug: slugFromPath(),
 			nome,
 			preco,
 			observacao: coletarObservacao(),
-			criadoEm: new Date().toISOString(),
-			...extra,
 		};
-		sessionStorage.setItem('acai_pedido', JSON.stringify(pedido));
 	}
 
-	function irCheckout() {
-		const params = new URLSearchParams(window.location.search);
-		const qs = params.toString();
-		window.location.href = '../../checkout/index.html' + (qs ? '?' + qs : '');
-	}
-
-	window.finalizar = function finalizar() {
-		if (typeof Swal === 'undefined') {
-			salvarPedido({ entrega: 'agora' });
-			irCheckout();
+	window.adicionarAoCarrinho = function adicionarAoCarrinho() {
+		const item = montarItem();
+		if (!item) {
+			if (typeof Swal !== 'undefined') {
+				Swal.fire({ icon: 'warning', title: 'Monte seu açaí', text: 'Selecione as opções do pedido antes de adicionar.' });
+			}
 			return;
 		}
-		Swal.fire({
-			title: 'Deseja que entregamos agora?',
-			showDenyButton: true,
-			showCancelButton: false,
-			allowOutsideClick: false,
-			icon: 'question',
-			confirmButtonText: 'Sim, por favor!',
-			confirmButtonColor: '#5b0e5c',
-			denyButtonText: 'Não, quero agendar a entrega!',
-			focusConfirm: true,
-		}).then((result) => {
-			if (result.isConfirmed) {
-				salvarPedido({ entrega: 'agora' });
-				irCheckout();
-			} else if (result.isDenied) {
-				Swal.fire({
-					title: 'Selecione o dia e a hora, por gentileza!',
-					text: 'Deixe seu pedido agendado e receba na hora combinada.',
-					confirmButtonText: 'Continuar para pagamento',
-					confirmButtonColor: '#5b0e5c',
-					showCancelButton: false,
-					allowOutsideClick: false,
-					input: 'datetime-local',
-					inputValidator: (v) => (v ? undefined : 'Escolha data e hora'),
-				}).then((r) => {
-					if (r.isConfirmed) {
-						salvarPedido({ entrega: 'agendado', agendadoPara: r.value });
-						irCheckout();
-					}
-				});
-			}
-		});
+
+		if (!window.AcaiCarrinho) {
+			alert('Erro ao carregar o carrinho. Recarregue a página.');
+			return;
+		}
+
+		window.AcaiCarrinho.add(item);
+
+		if (typeof Swal !== 'undefined') {
+			Swal.fire({
+				icon: 'success',
+				title: 'Adicionado ao carrinho!',
+				html: `<b>${item.nome}</b><br>Que tal montar mais um combo?`,
+				showDenyButton: true,
+				confirmButtonText: 'Continuar montando',
+				denyButtonText: 'Ver sacola',
+				confirmButtonColor: '#077c22',
+				denyButtonColor: '#5b0e5c',
+			}).then((r) => {
+				if (r.isDenied) window.AcaiCarrinho.openDrawer();
+			});
+		}
 	};
+
+	window.finalizar = window.adicionarAoCarrinho;
 })();

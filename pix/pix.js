@@ -42,6 +42,10 @@
 	};
 
 	function marcarPago() {
+		try {
+			localStorage.removeItem('acai_carrinho');
+			sessionStorage.removeItem('acai_checkout');
+		} catch (_) {}
 		document.getElementById('paid-ok').classList.add('show');
 		document.getElementById('pix-err').textContent = '';
 		setTimeout(() => {

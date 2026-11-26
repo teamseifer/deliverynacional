@@ -10,12 +10,30 @@
 		return String(s || '').replace(/\D/g, '');
 	}
 
-	function getPedido() {
+	function getCheckoutData() {
 		try {
-			return JSON.parse(sessionStorage.getItem('acai_pedido') || 'null');
-		} catch {
-			return null;
-		}
+			const pack = JSON.parse(sessionStorage.getItem('acai_checkout') || 'null');
+			if (pack?.itens?.length) {
+				return { itens: pack.itens, subtotal: Number(pack.subtotal) || 0 };
+			}
+		} catch {}
+		try {
+			const legacy = JSON.parse(sessionStorage.getItem('acai_pedido') || 'null');
+			if (legacy?.preco) {
+				return {
+					itens: [legacy],
+					subtotal: Number(legacy.preco) || 0,
+				};
+			}
+		} catch {}
+		try {
+			const fromStorage = JSON.parse(localStorage.getItem('acai_carrinho') || '[]');
+			if (Array.isArray(fromStorage) && fromStorage.length) {
+				const subtotal = fromStorage.reduce((s, i) => s + (Number(i.preco) || 0), 0);
+				return { itens: fromStorage, subtotal };
+			}
+		} catch {}
+		return null;
 	}
 
 	function utmParams() {
@@ -27,14 +45,18 @@
 		return o;
 	}
 
-	const pedido = getPedido();
-	if (!pedido || !pedido.preco) {
+	const checkout = getCheckoutData();
+	if (!checkout || !checkout.itens.length) {
 		window.location.replace('../index.html');
 		return;
 	}
 
 	const el = (id) => document.getElementById(id);
-	const subtotal = Number(pedido.preco) || 0;
+	const itens = checkout.itens;
+	let subtotal = Number(checkout.subtotal) || 0;
+	if (!subtotal) {
+		subtotal = itens.reduce((s, i) => s + (Number(i.preco) || 0) * (Number(i.quantidade) || 1), 0);
+	}
 
 	function taxaEntrega() {
 		const tipo = document.querySelector('input[name="tipo_entrega"]:checked');
@@ -54,14 +76,66 @@
 		return total;
 	}
 
-	el('resumo-produto').textContent = pedido.nome || pedido.slug;
-	el('resumo-obs').textContent = pedido.observacao ? 'Obs: ' + pedido.observacao : '';
+	const lista = el('resumo-itens');
+	lista.innerHTML = itens
+		.map(
+			(item) => `
+		<li>
+			<span class="item-preco">${brl(item.preco)}</span>
+			<div class="item-nome">${item.nome || item.slug}</div>
+			${item.observacao ? `<div class="item-obs">Obs: ${item.observacao}</div>` : ''}
+		</li>`
+		)
+		.join('');
 	el('resumo-subtotal').textContent = brl(subtotal);
 	atualizarTotais();
 
 	document.querySelectorAll('input[name="tipo_entrega"]').forEach((r) => {
 		r.addEventListener('change', atualizarTotais);
 	});
+
+	function formatCpf(value) {
+		const d = digits(value).slice(0, 11);
+		if (d.length <= 3) return d;
+		if (d.length <= 6) return d.slice(0, 3) + '.' + d.slice(3);
+		if (d.length <= 9) return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6);
+		return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
+	}
+
+	function formatTelefone(value) {
+		const d = digits(value).slice(0, 11);
+		if (d.length <= 2) return d.length ? '(' + d : '';
+		if (d.length <= 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+		if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+		return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+	}
+
+	function maskInput(input, formatter) {
+		input.addEventListener('input', () => {
+			const start = input.selectionStart;
+			const before = input.value;
+			const digitsBefore = digits(before.slice(0, start)).length;
+			input.value = formatter(input.value);
+			let pos = 0;
+			let seen = 0;
+			const v = input.value;
+			for (let i = 0; i < v.length; i++) {
+				if (/\d/.test(v[i])) seen++;
+				if (seen >= digitsBefore) {
+					pos = i + 1;
+					break;
+				}
+			}
+			if (seen < digitsBefore) pos = v.length;
+			input.setSelectionRange(pos, pos);
+		});
+		input.addEventListener('blur', () => {
+			input.value = formatter(input.value);
+		});
+	}
+
+	maskInput(el('cpf'), formatCpf);
+	maskInput(el('telefone'), formatTelefone);
 
 	function setCepMsg(msg, err) {
 		const m = el('cep-msg');
@@ -140,8 +214,8 @@
 		const checkout = {
 			identifier: id,
 			amount: total,
-			productType: pedido.slug || 'acai',
-			productName: pedido.nome,
+			productType: 'acai-carrinho',
+			productName: itens.map((i) => i.nome).join(' | ').slice(0, 180),
 			client: {
 				name: el('nome').value.trim(),
 				document: digits(el('cpf').value),
@@ -159,7 +233,7 @@
 				cidade: el('cidade').value.trim(),
 				uf: el('uf').value.trim().toUpperCase(),
 			},
-			pedido,
+			pedido: { itens },
 		};
 
 		el('btn-pagar').disabled = true;
@@ -173,6 +247,7 @@
 					identifier: checkout.identifier,
 					amount: checkout.amount,
 					productType: checkout.productType,
+					productName: checkout.productName,
 					client: checkout.client,
 					tracking: checkout.tracking,
 				}),
